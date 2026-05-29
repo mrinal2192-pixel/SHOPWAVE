@@ -377,11 +377,15 @@
         }
 
         // ---------- PRODUCT RENDERING WITH PAGINATION ----------
-        function resetAndRender() {
-            visibleCount = 0;
-            document.getElementById('searchInput').value = '';
-            document.getElementById('loadMoreBtn').style.display = 'none';
-            renderProducts(true);
+        function handleSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        // Reset pagination but DON'T clear the search input
+        visibleCount = 0;
+        document.getElementById('loadMoreBtn').style.display = 'none';
+        renderProducts(true);   // 'true' means clear the grid and start fresh
+    }, 300);
+}
         }
         function renderProducts(reset = false) {
             const search = document.getElementById('searchInput').value.toLowerCase();
