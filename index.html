@@ -136,7 +136,10 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a class="logo" onclick="showSection('store')">⚡ ShopWave</a>
-            <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="Search products..." oninput="resetAndRender()"></div>
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search products..." oninput="handleSearch()">
+            </div>
             <div class="nav-actions">
                 <button class="btn cart-btn" onclick="toggleCart()">🛒 Cart <span class="cart-count" id="cartCount">0</span></button>
                 <div id="userArea"></div>
@@ -308,6 +311,7 @@
         let currentPromoType = null; // 'percent' or 'fixed'
         let visibleCount = 0;
         const PER_PAGE = 8;
+        let searchTimeout; // for debouncing search
 
         // ---------- HELPERS ----------
         function saveCart() { localStorage.setItem(getCartKey(), JSON.stringify(cart)); updateCartCount(); }
@@ -377,14 +381,22 @@
         }
 
         // ---------- PRODUCT RENDERING WITH PAGINATION ----------
-        function resetAndRender() {
-    visibleCount = 0;
-    document.getElementById('searchInput').value = '';
-    document.getElementById('loadMoreBtn').style.display = 'none';
-    renderProducts(true);
-}
-}
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                visibleCount = 0;
+                document.getElementById('loadMoreBtn').style.display = 'none';
+                renderProducts(true);
+            }, 300);
         }
+
+        function resetAndRender() {
+            visibleCount = 0;
+            document.getElementById('searchInput').value = '';
+            document.getElementById('loadMoreBtn').style.display = 'none';
+            renderProducts(true);
+        }
+
         function renderProducts(reset = false) {
             const search = document.getElementById('searchInput').value.toLowerCase();
             let prods = getProducts();
@@ -398,7 +410,9 @@
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 card.onclick = () => openProductDetail(p.id);
-                const imgHtml = p.images && p.images.length ? `<img src="${p.images[0]}" alt="">` : (p.emoji||'📦');
+                const imgHtml = p.images && p.images.length
+                    ? `<img src="${p.images[0]}" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='${p.emoji||'📦'}'">`
+                    : (p.emoji||'📦');
                 const inWish = wishlist.includes(p.id);
                 card.innerHTML = `
                     ${p.badge ? `<span class="badge ${p.badge}">${p.badge.toUpperCase()}</span>`:''}
@@ -416,7 +430,9 @@
             visibleCount += toShow.length;
             document.getElementById('loadMoreBtn').style.display = visibleCount < prods.length ? 'block' : 'none';
         }
+
         function loadMoreProducts() { renderProducts(); }
+
         function setCategory(cat, btn) {
             currentCategory = cat;
             document.querySelectorAll('#filtersContainer .filter-btn').forEach(b=>b.classList.remove('active'));
@@ -475,7 +491,7 @@
             } else {
                 container.innerHTML = cart.map(item=>`
                     <div class="cart-item">
-                        <div class="cart-item-img">${item.image?`<img src="${item.image}" alt="">`:item.emoji||'📦'}</div>
+                        <div class="cart-item-img">${item.image?`<img src="${item.image}" alt="" onerror="this.parentElement.innerHTML='${item.emoji||'📦'}'">`:item.emoji||'📦'}</div>
                         <div style="flex:1"><strong>${item.name}</strong><br>৳${item.price} x ${item.qty}</div>
                         <div style="display:flex; gap:4px; align-items:center;">
                             <button class="qty-btn" onclick="updateQty(${item.id},-1)">-</button><span>${item.qty}</span>
