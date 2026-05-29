@@ -46,7 +46,12 @@
         .filter-btn { padding:6px 16px; border-radius:50px; border:2px solid var(--border); background:var(--surface); cursor:pointer; font-weight:600; font-size:0.85rem; transition:0.2s; }
         .filter-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
         .products-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:20px; }
-        .product-card { background:white; border-radius:var(--radius); overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:0.2s; cursor:pointer; border:1px solid transparent; position:relative; }
+        .product-card {
+            background:white; border-radius:var(--radius); overflow:hidden;
+            box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:0.2s;
+            cursor:pointer; border:1px solid transparent; position:relative;
+            display:flex; flex-direction:column;
+        }
         .product-card:hover { transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,0.1); border-color:var(--border); }
         .badge { position:absolute; top:12px; left:12px; background:var(--danger); color:white; padding:4px 10px; border-radius:50px; font-size:0.75rem; font-weight:700; z-index:2; }
         .badge.new { background:var(--success); }
@@ -55,16 +60,18 @@
             display:flex; align-items:center; justify-content:center;
             font-size:3.5rem; color:#94a3b8; position:relative; overflow:hidden;
         }
-        .product-img img {
-            width:100%; height:100%; object-fit:cover;
-        }
-        .product-info { padding:16px; display:flex; flex-direction:column; gap:4px; }
+        .product-img img { width:100%; height:100%; object-fit:cover; }
+        .product-info { padding:16px; flex:1; display:flex; flex-direction:column; gap:4px; }
         .product-category { font-size:0.75rem; color:var(--primary); font-weight:600; text-transform:uppercase; }
         .product-name { font-weight:700; font-size:1rem; }
         .product-price { font-weight:700; font-size:1.1rem; }
         .old-price { text-decoration:line-through; color:var(--text-muted); font-size:0.85rem; margin-left:8px; }
         .rating { color:#f59e0b; font-size:0.85rem; }
-        .btn-add { width:100%; margin-top:8px; padding:8px; border-radius:6px; background:var(--primary); color:white; border:none; font-weight:600; cursor:pointer; }
+        .btn-add {
+            width:100%; margin-top:8px; padding:8px; border-radius:6px;
+            background:var(--primary); color:white; border:none; font-weight:600; cursor:pointer;
+            transition:0.2s; z-index:1;
+        }
         .btn-add:hover { background:var(--primary-hover); }
         .btn-add.added { background:var(--success); }
         .cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; opacity:0; pointer-events:none; transition:0.3s; }
@@ -102,6 +109,16 @@
         .badge-status.processing { background:#dbeafe; color:#1e40af; }
         .badge-status.shipped { background:#d1fae5; color:#065f46; }
         .badge-status.delivered { background:#e0e7ff; color:#3730a3; }
+        .product-detail-img {
+            width:100%; aspect-ratio:1; background:#f1f5f9;
+            display:flex; align-items:center; justify-content:center;
+            font-size:6rem; color:#94a3b8; border-radius:8px; overflow:hidden; margin-bottom:16px;
+        }
+        .product-detail-img img { width:100%; height:100%; object-fit:cover; }
+        .product-detail-info h2 { margin-bottom:8px; }
+        .product-detail-info .price { font-size:1.3rem; font-weight:700; }
+        .product-detail-info .description { color:var(--text-muted); margin:12px 0; }
+        .product-detail-actions { margin-top:16px; }
         .whatsapp-float { position:fixed; bottom:24px; right:24px; width:60px; height:60px; background:#25D366; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(37,211,102,0.4); cursor:pointer; z-index:1500; }
         .footer { text-align:center; padding:24px; background:white; border-top:1px solid var(--border); font-size:0.9rem; color:var(--text-muted); }
     </style>
@@ -159,9 +176,9 @@
         </div>
     </div>
 
-    <!-- PRODUCT MODAL (with image upload) -->
+    <!-- PRODUCT MODAL (Admin) -->
     <div class="modal" id="productModal">
-        <div class="modal-content"><h3>Add Product</h3><input type="hidden" id="editProductId">
+        <div class="modal-content"><h3>Add / Edit Product</h3><input type="hidden" id="editProductId">
             <div class="form-group"><label>Name</label><input type="text" id="prodName"></div>
             <div class="form-group"><label>Category</label><select id="prodCategory"><option>clothing</option><option>shoes</option><option>accessories</option><option>electronics</option></select></div>
             <div class="form-group"><label>Price (BDT)</label><input type="number" id="prodPrice"></div>
@@ -174,16 +191,32 @@
                     <input type="file" id="prodImageFile" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
                     <button class="btn" onclick="document.getElementById('prodImageFile').click()">📁 Upload</button>
                 </div>
-                <small style="color:var(--text-muted);">Recommended size: 400x400px, max 1MB</small>
                 <div id="imagePreview" style="margin-top:8px; display:none;"><img src="" style="width:80px; height:80px; object-fit:cover; border-radius:4px;"></div>
             </div>
+            <div class="form-group"><label>Description</label><textarea id="prodDescription" rows="3" placeholder="Short product description..."></textarea></div>
             <div class="modal-buttons"><button class="btn" onclick="closeProductModal()">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save</button></div>
+        </div>
+    </div>
+
+    <!-- PRODUCT DETAIL MODAL (Customer) -->
+    <div class="modal" id="productDetailModal">
+        <div class="modal-content" style="max-width:500px;">
+            <button class="btn" style="float:right; border:none; font-size:1.2rem;" onclick="closeProductDetail()">✕</button>
+            <div class="product-detail-img" id="detailImage"></div>
+            <div class="product-detail-info">
+                <h2 id="detailName"></h2>
+                <div class="price" id="detailPrice"></div>
+                <div class="rating" id="detailRating"></div>
+                <p class="description" id="detailDescription"></p>
+            </div>
+            <div class="product-detail-actions">
+                <button class="btn btn-primary" style="width:100%; padding:12px;" id="detailAddBtn" onclick="">Add to Cart</button>
+            </div>
         </div>
     </div>
 
     <!-- CHECKOUT MODAL -->
     <div class="modal" id="checkoutModal">
-        <!-- same as before, unchanged -->
         <div class="modal-content">
             <div id="checkoutStep1">
                 <h3>📬 Delivery Address</h3>
@@ -226,18 +259,18 @@
     <script>
         // ========== DATA STORE ==========
         const defaultProducts = [
-            { id:1, name:'Classic White Tee', category:'clothing', price:3599, oldPrice:4799, rating:4.5, emoji:'👕', badge:'sale', badgeText:'SALE', image:'' },
-            { id:2, name:'Slim Fit Jeans', category:'clothing', price:7199, rating:4.2, emoji:'👖', image:'' },
-            { id:3, name:'Leather Jacket', category:'clothing', price:15599, oldPrice:21599, rating:4.8, emoji:'🧥', badge:'sale', badgeText:'SALE', image:'' },
-            { id:4, name:'Running Sneakers', category:'shoes', price:10799, rating:4.6, emoji:'👟', badge:'new', badgeText:'NEW', image:'' },
-            { id:5, name:'Casual Loafers', category:'shoes', price:8999, oldPrice:11999, rating:4.3, emoji:'👞', badge:'sale', badgeText:'SALE', image:'' },
-            { id:6, name:'Ankle Boots', category:'shoes', price:13199, rating:4.7, emoji:'👢', image:'' },
-            { id:7, name:'Leather Watch', category:'accessories', price:17999, oldPrice:23999, rating:4.9, emoji:'⌚', badge:'sale', badgeText:'SALE', image:'' },
-            { id:8, name:'Aviator Sunglasses', category:'accessories', price:5999, rating:4.4, emoji:'🕶️', badge:'new', badgeText:'NEW', image:'' },
-            { id:9, name:'Canvas Backpack', category:'accessories', price:8399, oldPrice:10199, rating:4.5, emoji:'🎒', badge:'sale', badgeText:'SALE', image:'' },
-            { id:10, name:'Wireless Earbuds', category:'electronics', price:9599, oldPrice:14399, rating:4.6, emoji:'🎧', badge:'sale', badgeText:'SALE', image:'' },
-            { id:11, name:'Smart Watch', category:'electronics', price:23999, rating:4.7, emoji:'⌚', badge:'new', badgeText:'NEW', image:'' },
-            { id:12, name:'Portable Speaker', category:'electronics', price:6599, oldPrice:8399, rating:4.3, emoji:'🔊', badge:'sale', badgeText:'SALE', image:'' },
+            { id:1, name:'Classic White Tee', category:'clothing', price:3599, oldPrice:4799, rating:4.5, emoji:'👕', badge:'sale', badgeText:'SALE', image:'', description:'Premium cotton crew neck t-shirt. Comfortable and breathable.' },
+            { id:2, name:'Slim Fit Jeans', category:'clothing', price:7199, oldPrice:null, rating:4.2, emoji:'👖', image:'', description:'Modern slim fit jeans with stretch denim. Perfect for casual wear.' },
+            { id:3, name:'Leather Jacket', category:'clothing', price:15599, oldPrice:21599, rating:4.8, emoji:'🧥', badge:'sale', badgeText:'SALE', image:'', description:'Genuine leather biker jacket. Classic style with a modern fit.' },
+            { id:4, name:'Running Sneakers', category:'shoes', price:10799, rating:4.6, emoji:'👟', badge:'new', badgeText:'NEW', image:'', description:'Lightweight running shoes with responsive cushioning.' },
+            { id:5, name:'Casual Loafers', category:'shoes', price:8999, oldPrice:11999, rating:4.3, emoji:'👞', badge:'sale', badgeText:'SALE', image:'', description:'Stylish suede loafers for smart-casual outfits.' },
+            { id:6, name:'Ankle Boots', category:'shoes', price:13199, rating:4.7, emoji:'👢', image:'', description:'Durable leather ankle boots with rugged sole.' },
+            { id:7, name:'Leather Watch', category:'accessories', price:17999, oldPrice:23999, rating:4.9, emoji:'⌚', badge:'sale', badgeText:'SALE', image:'', description:'Elegant analog watch with genuine leather strap.' },
+            { id:8, name:'Aviator Sunglasses', category:'accessories', price:5999, rating:4.4, emoji:'🕶️', badge:'new', badgeText:'NEW', image:'', description:'UV400 protection with classic aviator design.' },
+            { id:9, name:'Canvas Backpack', category:'accessories', price:8399, oldPrice:10199, rating:4.5, emoji:'🎒', badge:'sale', badgeText:'SALE', image:'', description:'Spacious canvas backpack with laptop compartment.' },
+            { id:10, name:'Wireless Earbuds', category:'electronics', price:9599, oldPrice:14399, rating:4.6, emoji:'🎧', badge:'sale', badgeText:'SALE', image:'', description:'True wireless earbuds with active noise cancellation.' },
+            { id:11, name:'Smart Watch', category:'electronics', price:23999, rating:4.7, emoji:'⌚', badge:'new', badgeText:'NEW', image:'', description:'Fitness tracker with heart rate monitor and GPS.' },
+            { id:12, name:'Portable Speaker', category:'electronics', price:6599, oldPrice:8399, rating:4.3, emoji:'🔊', badge:'sale', badgeText:'SALE', image:'', description:'Waterproof Bluetooth speaker with 12 hours battery.' },
         ];
 
         function getProducts() { return JSON.parse(localStorage.getItem('products') || JSON.stringify(defaultProducts)); }
@@ -253,19 +286,16 @@
         let currentCategory = 'all';
         let cart = JSON.parse(localStorage.getItem(getCartKey()) || '[]');
         let currentPromoDiscount = 0;
+        let selectedProductId = null;
 
         function saveCart() { localStorage.setItem(getCartKey(), JSON.stringify(cart)); updateCartCount(); }
         function updateCartCount() { document.getElementById('cartCount').textContent = cart.reduce((s,i)=>s+i.qty,0); }
 
-        // ========== IMAGE UPLOAD HELPER ==========
+        // ========== IMAGE UPLOAD ==========
         function handleImageUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 1024 * 1024) { // 1MB limit
-                alert('Image too large. Please use an image under 1MB.');
-                input.value = '';
-                return;
-            }
+            if (file.size > 1024 * 1024) { alert('Image too large. Max 1MB.'); input.value=''; return; }
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('prodImageUrl').value = e.target.result;
@@ -273,11 +303,9 @@
             };
             reader.readAsDataURL(file);
         }
-
         function showImagePreview(url) {
             const preview = document.getElementById('imagePreview');
-            const img = preview.querySelector('img');
-            img.src = url;
+            preview.querySelector('img').src = url;
             preview.style.display = 'block';
         }
 
@@ -351,19 +379,9 @@
 
         function showSection(section) {
             document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-            if(section==='store') {
-                document.getElementById('storeSection').classList.add('active');
-                renderProducts();
-            }
-            else if(section==='orders') {
-                document.getElementById('ordersSection').classList.add('active');
-                renderUserOrders();
-            }
-            else if(section==='admin') {
-                document.getElementById('adminSection').classList.add('active');
-                showAdminTab('products');
-                renderAdminProducts();
-            }
+            if(section==='store') { document.getElementById('storeSection').classList.add('active'); renderProducts(); }
+            else if(section==='orders') { document.getElementById('ordersSection').classList.add('active'); renderUserOrders(); }
+            else if(section==='admin') { document.getElementById('adminSection').classList.add('active'); showAdminTab('products'); renderAdminProducts(); }
         }
 
         // ========== PRODUCTS ==========
@@ -377,8 +395,8 @@
             if(!grid) return;
             grid.innerHTML = prods.map(p=>{
                 const inCart = cart.find(i=>i.id===p.id);
-                const imageHtml = p.image ? `<img src="${p.image}" alt="${p.name}">` : p.emoji || '📦';
-                return `<div class="product-card">
+                const imageHtml = p.image ? `<img src="${p.image}" alt="${p.name}">` : (p.emoji || '📦');
+                return `<div class="product-card" onclick="openProductDetail(${p.id})">
                     ${p.badge ? `<span class="badge ${p.badge}">${p.badgeText||p.badge.toUpperCase()}</span>`:''}
                     <div class="product-img">${imageHtml}</div>
                     <div class="product-info">
@@ -386,10 +404,37 @@
                         <div class="product-name">${p.name}</div>
                         <div class="rating">${'★'.repeat(Math.floor(p.rating||4))}${p.rating%1>=0.5?'½':''}</div>
                         <div class="product-price">৳${p.price} ${p.oldPrice?`<span class="old-price">৳${p.oldPrice}</span>`:''}</div>
-                        <button class="btn-add ${inCart?'added':''}" onclick="addToCart(${p.id})">${inCart?`✓ In Cart (${inCart.qty})`:'Add to Cart'}</button>
+                        <button class="btn-add ${inCart?'added':''}" onclick="event.stopPropagation(); addToCart(${p.id})">${inCart?`✓ In Cart (${inCart.qty})`:'Add to Cart'}</button>
                     </div>
                 </div>`;
             }).join('');
+        }
+
+        function openProductDetail(id) {
+            const prod = getProducts().find(p=>p.id===id);
+            if(!prod) return;
+            selectedProductId = id;
+            document.getElementById('detailImage').innerHTML = prod.image ? `<img src="${prod.image}" alt="${prod.name}">` : (prod.emoji || '📦');
+            document.getElementById('detailName').textContent = prod.name;
+            document.getElementById('detailPrice').textContent = `৳${prod.price} ${prod.oldPrice ? ' (~~৳'+prod.oldPrice+'~~)' : ''}`;
+            document.getElementById('detailRating').innerHTML = `${'★'.repeat(Math.floor(prod.rating||4))}${prod.rating%1>=0.5?'½':''} ${prod.rating}`;
+            document.getElementById('detailDescription').textContent = prod.description || 'No description available.';
+            const inCart = cart.find(i=>i.id===id);
+            const btn = document.getElementById('detailAddBtn');
+            btn.textContent = inCart ? `✓ In Cart (${inCart.qty})` : 'Add to Cart';
+            btn.onclick = () => { addToCart(id); closeProductDetail(); };
+            document.getElementById('productDetailModal').classList.add('open');
+            // Update URL without reloading
+            const url = new URL(window.location);
+            url.searchParams.set('product', id);
+            window.history.replaceState({}, '', url);
+        }
+        function closeProductDetail() {
+            document.getElementById('productDetailModal').classList.remove('open');
+            // Remove product param from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('product');
+            window.history.replaceState({}, '', url);
         }
 
         function setCategory(cat, btn) {
@@ -406,14 +451,7 @@
             if(existing) existing.qty++;
             else {
                 const prod = getProducts().find(p=>p.id===productId);
-                cart.push({
-                    id: prod.id,
-                    name: prod.name,
-                    price: prod.price,
-                    emoji: prod.emoji,
-                    image: prod.image || '',
-                    qty: 1
-                });
+                cart.push({ id:prod.id, name:prod.name, price:prod.price, emoji:prod.emoji, image:prod.image||'', qty:1 });
             }
             saveCart(); renderCart(); renderProducts();
         }
@@ -430,7 +468,7 @@
             const container = document.getElementById('cartItems');
             const footer = document.getElementById('cartFooter');
             if(cart.length===0) {
-                container.innerHTML = '<div class="cart-empty">🛒<p>Your cart is empty</p></div>';
+                container.innerHTML = '<div style="text-align:center; padding:40px;">🛒<p>Your cart is empty</p></div>';
                 footer.style.display='none';
             } else {
                 container.innerHTML = cart.map(item=>{
@@ -460,7 +498,7 @@
             renderCart();
         }
 
-        // ========== CHECKOUT (unchanged) ==========
+        // ========== CHECKOUT ==========
         function openCheckoutModal() {
             if(cart.length===0) return;
             if(!getCurrentUserId()) { alert('Please login first'); toggleCart(); return; }
@@ -475,17 +513,12 @@
             currentPromoDiscount = 0;
         }
         function closeCheckoutModal() { document.getElementById('checkoutModal').classList.remove('open'); }
-
         function goToPromoStep() {
             const name = document.getElementById('checkoutName').value.trim();
             const phone = document.getElementById('checkoutPhone').value.trim();
             const address = document.getElementById('checkoutAddress').value.trim();
             if(!name||!phone||!address) return alert('Fill required fields');
-            window._tempDelivery = {
-                name, phone, address,
-                city: document.getElementById('checkoutCity').value,
-                additionalInfo: document.getElementById('checkoutAdditionalInfo').value.trim()
-            };
+            window._tempDelivery = { name, phone, address, city: document.getElementById('checkoutCity').value, additionalInfo: document.getElementById('checkoutAdditionalInfo').value.trim() };
             document.getElementById('checkoutStep1').style.display = 'none';
             document.getElementById('checkoutStep2').style.display = 'block';
             updatePromoSummary();
@@ -494,7 +527,6 @@
             document.getElementById('checkoutStep2').style.display = 'none';
             document.getElementById('checkoutStep1').style.display = 'block';
         }
-
         function updatePromoSummary() {
             const delivery = window._tempDelivery?.city === 'Dhaka' ? 80 : 130;
             const subtotal = cart.reduce((s,i)=>s+i.price*i.qty,0);
@@ -511,7 +543,6 @@
                 document.getElementById('discountRow').style.display = 'none';
             }
         }
-
         function applyPromo() {
             const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
             const msg = document.getElementById('promoMessage');
@@ -526,7 +557,6 @@
             }
             updatePromoSummary();
         }
-
         function placeOrderWithPromo() {
             const delivery = window._tempDelivery;
             if(!delivery) return;
@@ -535,23 +565,15 @@
             const discount = Math.round(subtotal * currentPromoDiscount / 100);
             const total = subtotal + deliveryCharge - discount;
             const order = {
-                id: Date.now(),
-                userId: getCurrentUserId(),
-                items: cart.map(item => ({ ...item })), // deep copy with image
+                id: Date.now(), userId: getCurrentUserId(), items: cart.map(i=>({...i})),
                 subtotal, deliveryCharge, discount, total,
-                date: new Date().toLocaleDateString(),
-                status: 'Pending',
-                delivery,
-                promo: currentPromoDiscount ? `${currentPromoDiscount}% off` : ''
+                date: new Date().toLocaleDateString(), status: 'Pending',
+                delivery, promo: currentPromoDiscount ? `${currentPromoDiscount}% off` : ''
             };
-            const orders = getOrders();
-            orders.push(order);
-            saveOrders(orders);
-            cart = []; saveCart();
-            closeCheckoutModal();
+            const orders = getOrders(); orders.push(order); saveOrders(orders);
+            cart = []; saveCart(); closeCheckoutModal();
             alert(`✅ Order placed! Total: ৳${total}\nPay via bKash/Nagad: 01712345678.`);
-            showSection('orders');
-            currentPromoDiscount = 0;
+            showSection('orders'); currentPromoDiscount = 0;
         }
 
         // ========== USER ORDERS ==========
@@ -585,18 +607,16 @@
             if(!tbody) return;
             tbody.innerHTML = prods.map(p=>{
                 const thumb = p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">` : (p.emoji || '📦');
-                return `<tr>
-                    <td>${thumb}</td><td>${p.id}</td><td>${p.name}</td><td>${p.category}</td><td>৳${p.price}</td>
-                    <td><button class="btn" onclick="editProduct(${p.id})">✏️</button> <button class="btn" onclick="deleteProduct(${p.id})">🗑️</button></td>
-                </tr>`;
+                return `<tr><td>${thumb}</td><td>${p.id}</td><td>${p.name}</td><td>${p.category}</td><td>৳${p.price}</td>
+                    <td><button class="btn" onclick="editProduct(${p.id})">✏️</button> <button class="btn" onclick="deleteProduct(${p.id})">🗑️</button></td></tr>`;
             }).join('');
         }
         function openAddProductModal() {
             document.getElementById('editProductId').value='';
             document.getElementById('prodName').value=''; document.getElementById('prodPrice').value='';
             document.getElementById('prodOldPrice').value=''; document.getElementById('prodEmoji').value='';
-            document.getElementById('prodBadge').value='';
-            document.getElementById('prodImageUrl').value='';
+            document.getElementById('prodBadge').value=''; document.getElementById('prodImageUrl').value='';
+            document.getElementById('prodDescription').value='';
             document.getElementById('prodImageFile').value='';
             document.getElementById('imagePreview').style.display='none';
             document.getElementById('productModal').classList.add('open');
@@ -612,11 +632,9 @@
             document.getElementById('prodEmoji').value=prod.emoji||'';
             document.getElementById('prodBadge').value=prod.badge||'';
             document.getElementById('prodImageUrl').value=prod.image||'';
-            if (prod.image) {
-                showImagePreview(prod.image);
-            } else {
-                document.getElementById('imagePreview').style.display='none';
-            }
+            document.getElementById('prodDescription').value=prod.description||'';
+            if(prod.image) showImagePreview(prod.image);
+            else document.getElementById('imagePreview').style.display='none';
             document.getElementById('productModal').classList.add('open');
         }
         function closeProductModal() { document.getElementById('productModal').classList.remove('open'); }
@@ -629,13 +647,14 @@
             const emoji = document.getElementById('prodEmoji').value.trim();
             const badge = document.getElementById('prodBadge').value;
             const image = document.getElementById('prodImageUrl').value.trim();
+            const description = document.getElementById('prodDescription').value.trim();
             if(!name||!price) return alert('Name and price required');
             const prods = getProducts();
             if(id) {
                 const idx = prods.findIndex(p=>p.id==id);
-                if(idx>-1) Object.assign(prods[idx], {name,category,price,oldPrice,emoji,badge,badgeText:badge.toUpperCase(), image});
+                if(idx>-1) Object.assign(prods[idx], {name,category,price,oldPrice,emoji,badge,badgeText:badge.toUpperCase(), image, description});
             } else {
-                prods.push({ id: Date.now(), name, category, price, oldPrice, rating:4.5, emoji, badge, badgeText:badge.toUpperCase(), image });
+                prods.push({ id: Date.now(), name, category, price, oldPrice, rating:4.5, emoji, badge, badgeText:badge.toUpperCase(), image, description });
             }
             saveProducts(prods);
             closeProductModal();
@@ -643,7 +662,7 @@
             renderProducts();
         }
         function deleteProduct(id) {
-            if(confirm('Delete?')) {
+            if(confirm('Delete this product?')) {
                 saveProducts(getProducts().filter(p=>p.id!==id));
                 renderAdminProducts(); renderProducts();
             }
@@ -655,12 +674,9 @@
             if(!tbody) return;
             tbody.innerHTML = orders.map(o=>{
                 const user = users.find(u=>u.id==o.userId);
-                return `<tr>
-                    <td>${o.id}</td><td>${user?.name||'Unknown'}</td><td>৳${o.total} (Sub: ৳${o.subtotal}, Del: ৳${o.deliveryCharge}${o.discount ? `, Disc: -৳${o.discount}`:''})</td>
-                    <td><span class="badge-status ${o.status.toLowerCase()}">${o.status}</span></td>
-                    <td>${o.date}</td>
-                    <td><select onchange="updateOrderStatus(${o.id}, this.value)"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Processing'?'selected':''}>Processing</option><option ${o.status==='Shipped'?'selected':''}>Shipped</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option></select></td>
-                </tr>`;
+                return `<tr><td>${o.id}</td><td>${user?.name||'Unknown'}</td><td>৳${o.total} (Sub: ৳${o.subtotal}, Del: ৳${o.deliveryCharge}${o.discount ? `, Disc: -৳${o.discount}`:''})</td>
+                    <td><span class="badge-status ${o.status.toLowerCase()}">${o.status}</span></td><td>${o.date}</td>
+                    <td><select onchange="updateOrderStatus(${o.id}, this.value)"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Processing'?'selected':''}>Processing</option><option ${o.status==='Shipped'?'selected':''}>Shipped</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option></select></td></tr>`;
             }).join('');
         }
         function updateOrderStatus(orderId, status) {
@@ -669,6 +685,18 @@
             if(order) order.status = status;
             saveOrders(orders);
             renderAdminOrders();
+        }
+
+        // ========== URL PARAMETER PRODUCT PAGE ==========
+        function checkUrlForProduct() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('product');
+            if (productId) {
+                const prod = getProducts().find(p => p.id == productId);
+                if (prod) {
+                    openProductDetail(prod.id);
+                }
+            }
         }
 
         // ========== INIT ==========
@@ -685,6 +713,7 @@
             refreshUI();
             renderProducts();
             renderCart();
+            checkUrlForProduct(); // Auto-open product if ?product=ID is present
         };
     </script>
 </body>
