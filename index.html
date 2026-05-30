@@ -570,38 +570,66 @@ function placeOrderWithPromo() {
     if(currentPromoType==='percent') discount = Math.round(subtotal * currentPromoDiscount/100);
     else if(currentPromoType==='fixed') discount = currentPromoDiscount;
     const total = subtotal + deliveryCharge - discount;
+
     const prods = getProducts();
     for (let item of cart) {
         const prod = prods.find(p=>p.id===item.id);
         if(prod.stock < item.qty) return alert(`Not enough stock for ${item.name}`);
     }
-    cart.forEach(item => { const prod = prods.find(p=>p.id===item.id); prod.stock -= item.qty; });
+    cart.forEach(item => { 
+        const prod = prods.find(p=>p.id===item.id); 
+        prod.stock -= item.qty; 
+    });
     saveProducts(prods);
+
     const order = {
-        id: Date.now(), userId: getCurrentUserId(), items: cart.map(i=>({...i})),
+        id: Date.now(), 
+        userId: getCurrentUserId(), 
+        items: cart.map(i=>({...i})),
         subtotal, deliveryCharge, discount, total,
-        date: new Date().toLocaleDateString(), status:'Pending',
-        delivery: del, promo: currentPromoDiscount?`${currentPromoType==='percent'?currentPromoDiscount+'%': '৳'+currentPromoDiscount}`:''
+        date: new Date().toLocaleDateString(), 
+        status:'Pending',
+        delivery: del, 
+        promo: currentPromoDiscount ? `${currentPromoType==='percent' ? currentPromoDiscount+'%' : '৳'+currentPromoDiscount}` : ''
     };
-    const orders = getOrders(); orders.push(order); saveOrders(orders);
 
-    // Send to Google Sheet
+    const orders = getOrders(); 
+    orders.push(order); 
+    saveOrders(orders);
+
+    // 📊 SEND TO GOOGLE SHEET
     const sheetData = {
-        id: order.id, date: order.date,
-        customer: del.name, phone: del.phone,
-        address: `${del.address}, ${del.city}${del.additionalInfo ? ' (' + del.additionalInfo + ')' : ''}`,
+        id: String(order.id),
+        date: order.date,
+        customer: del.name,
+        phone: del.phone,
+        address: `${del.address}, ${del.city}`,
         items: order.items.map(i => `${i.name} x${i.qty}`).join(', '),
-        total: total, status: 'Pending'
+        total: total,
+        status: 'Pending'
     };
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(sheetData) })
-        .then(r => r.json())
-        .then(d => { if(d.result==='success') showToast('Order saved to Google Sheets ✅'); })
-        .catch(e => console.log('Sheet sync pending:', e));
 
-    cart = []; saveCart();
+    fetch('https://script.google.com/macros/s/AKfycbxgHLhP0b-5ulYf2-fdYl2mxaQl0zVaKZbzV30mrJ_8qvmGGf2WvunVa6FaeJD1dneH/exec', {
+        method: 'POST',
+        body: JSON.stringify(sheetData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Sheet response:', data);
+        if(data.result === 'success') {
+            showToast('✅ Order saved to Google Sheets!');
+        }
+    })
+    .catch(error => {
+        console.error('Sheet error:', error);
+    });
+
+    cart = []; 
+    saveCart();
     closeCheckoutModal();
-    alert(`✅ Order placed! Total: ৳${total}\n\nAdmin will contact you soon.`);
+    alert(`✅ Order placed! Total: ৳${total}\n\nCheck your Google Sheet.`);
     showSection('orders');
+}
 }
 
 function renderUserOrders() {
